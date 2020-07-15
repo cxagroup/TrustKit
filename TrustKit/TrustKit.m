@@ -98,17 +98,21 @@ void TSKLog(NSString *format, ...)
     
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        sharedTrustKit = [[TrustKit alloc] initWithConfiguration:trustKitConfig
-                                       sharedContainerIdentifier:sharedContainerIdentifier
-                                                     isSingleton:YES];
-        
-        // Hook network APIs if needed
-        if ([sharedTrustKit.configuration[kTSKSwizzleNetworkDelegates] boolValue]) {
-            // NSURLConnection
-            [TSKNSURLConnectionDelegateProxy swizzleNSURLConnectionConstructors:sharedTrustKit];
+        @try {
+            sharedTrustKit = [[TrustKit alloc] initWithConfiguration:trustKitConfig
+                                           sharedContainerIdentifier:sharedContainerIdentifier
+                                                         isSingleton:YES];
             
-            // NSURLSession
-            [TSKNSURLSessionDelegateProxy swizzleNSURLSessionConstructors:sharedTrustKit];
+            // Hook network APIs if needed
+            if ([sharedTrustKit.configuration[kTSKSwizzleNetworkDelegates] boolValue]) {
+                // NSURLConnection
+                [TSKNSURLConnectionDelegateProxy swizzleNSURLConnectionConstructors:sharedTrustKit];
+                
+                // NSURLSession
+                [TSKNSURLSessionDelegateProxy swizzleNSURLSessionConstructors:sharedTrustKit];
+            }
+        } @catch (NSException *exception) {
+            NSLog(@"%@", exception);
         }
     });
 }
@@ -288,3 +292,4 @@ __attribute__((constructor)) static void initializeWithInfoPlist(int argc, const
         [TrustKit initSharedInstanceWithConfiguration:trustKitConfigFromInfoPlist];
     }
 }
+
